@@ -1,0 +1,63 @@
+---
+title: "Quick-Start-Guide"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Quick-Start-Guide}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(exceedance)
+```
+# Introduction
+Multiple comparisons problem usually arises in the case where two or more hypotheses are tested simultaneously. It is called "a problem" for the simple fact that the more inferences are made, the more likely erroneous inferences are to occur, so misleading conclusions can be made from the tests if the number of tests is not considered. Several definitions of the error rate has been proposed to measure the quality of the inference. The most popular definitions are the family-wise error rate(FWER), false discover rate(FDR) and false discover proportion(FDP). The package specifically focus on the control methods of The false discover rate, which is the number of false possitive rejections divided by the number of total rejections. Though The FDP is not directly observable, but it is still possible to control the exceedance rate of the FDP such that
+
+$$
+\mathrm{Prob}(\mathrm{FDP} > \mathrm{bound}) < \alpha
+$$
+where $\mathrm{bound}$ and $\alpha$ are fixed constants. Therefore, by choosing $\mathrm{bound}$ and $\alpha$, the chance of getting a large FDP is restricted, which guarantees the quality of the inference results.
+
+#Example
+While there are several controlling technique for the FDP, the procedures at R are the same. Assuming that there are `n` hypotheses, each hypothesis gives a p-value. We will use the method in Genovese, C., & Wasserman, L. (2004) to control the exceedance rate. 
+```{r}
+n <- 10L
+## Generate the pvalues for n hypotheses
+x <- rbeta(n, 1, 3)
+## Specify which test method will be used in the controlling procedure
+## Please see `?param_fast_GW` for details
+params <- param_fast_GW(statistic = "kth_p", param1 =3L)
+params
+
+## Profile the data
+profile <- exceedance_profile(x = x, params = params)
+profile
+## Conducting inference
+alpha <- 0.05
+bound <- 0.2
+exceedance_inference(profiled_data = profile, alpha = alpha, bound = bound)
+```
+
+```{r}
+params <- param_fast_GW(statistic = "KS", param1 = c(0, 1) , range_type = "proportion")
+params <- param_fast_GW(statistic = "KS", param1 =1:10)
+```
+
+
+
+
+
+
+
+
+
+
+
+
