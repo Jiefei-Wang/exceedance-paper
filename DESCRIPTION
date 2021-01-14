@@ -18,9 +18,7 @@ Imports:
     Rcpp,
     methods,
     stats,
-    digest,
-    synchronicity,
-    R.cache
+    digest
 Suggests: 
     testthat,
     knitr,
