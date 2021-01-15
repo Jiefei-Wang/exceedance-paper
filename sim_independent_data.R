@@ -8,7 +8,7 @@ H1_p <- function(n, mu){
 nSim <- 100
 alpha <- 0.1
 gamma <- 0.1
-a_mu <- expand.grid(a=c(0.2,0.5),mu=3)
+a_mu <- expand.grid(a=c(0,0.2,0.5),mu=3)
 m_list <- c(rep(100,nrow(a_mu)),rep(500,nrow(a_mu)),
             rep(1000,nrow(a_mu)),rep(2000,nrow(a_mu)),
             rep(5000,nrow(a_mu)))
