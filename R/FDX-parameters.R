@@ -97,8 +97,8 @@ param_fast_GW<-function(statistic = c("kth_p",
                 param2 <- c(0,param2)
             }
         }else{
-             param1 <- as.numeric(sort(param1))
-             param2 <- as.numeric(sort(param2))
+             param1 <- as.numeric(sort(unique(param1)))
+             param2 <- as.numeric(sort(unique(param2)))
         }
         if(length(param1)==0&&length(param2)==0){
             param1 <- c(0,1)

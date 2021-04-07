@@ -68,9 +68,32 @@ process_local_critical <- function(bound,indexL,indexU){
 #################################
 ##   critical cache
 #################################
+
+get_index_key <- function(n,index){
+    if(length(index)==0){
+        return("")
+    }
+    if(length(index)==1){
+        return(as.character(index))
+    }
+    if(length(index)==n){
+        return("*")
+    }
+    key <- NULL
+    if(length(index)==index[length(index)]-index[1]+1){
+        key <- paste0(index[1],"-",index[length(index)])
+    }else{
+        key <- paste0(length(index), ":",
+                      digest::digest(index, algo = "crc32")
+        )
+    }
+    key
+}
+
 get_cache_key <- function(statName, n, alpha, indexL, indexU){
-    index_key <- digest::digest(list(as.numeric(indexL),as.numeric(indexU)))
-    cache_key <- paste0(statName, n, alpha, index_key)
+    keyL <- get_index_key(n,indexL)
+    keyU <- get_index_key(n,indexU)
+    cache_key <- paste0(statName,",", n, ",", alpha, "L", keyL,"U",keyU)
     cache_key
 }
 exist_cache_value <- function(cache_key){
@@ -86,14 +109,15 @@ set_cache_value <- function(cache_key, value){
     pkg_data$criticals[[cache_key]] <- value
 }
 
-## Get critical value for BJ, KS, HC...
-## If the critical has been cached, we will get it from cache
-get_critical <- function(statName, n, alpha, indexL, indexU){
+compute_key_critical <- function(statName, n, alpha, indexL, indexU){
     if(length(indexL)!=0&&max(indexL)>n){
         indexL <- indexL[indexL<=n]
     }
     if(length(indexU)!=0&&max(indexU)>n){
         indexU <- indexU[indexU<=n]
+    }
+    if(length(indexU)==0&&length(indexL)==0){
+        return(NULL)
     }
     cache_key <- get_cache_key(statName = statName, n=n, 
                                alpha=alpha, indexL=indexL, indexU=indexU)
@@ -109,5 +133,13 @@ get_critical <- function(statName, n, alpha, indexL, indexU){
         critical <- GKSCritical(n=n,alpha=alpha,indexL=indexL,indexU=indexU,statName=statName)
         set_cache_value(cache_key, critical)
     }
-    critical
+    list(key = cache_key, critical = critical)
+}
+
+
+## Get critical value for BJ, KS, HC...
+## If the critical has been cached, we will get it from cache
+get_critical <- function(statName, n, alpha, indexL, indexU){
+    compute_key_critical(statName, n, alpha, indexL, indexU)$critical
+    
 }

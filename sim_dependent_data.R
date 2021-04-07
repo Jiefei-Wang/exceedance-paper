@@ -1,7 +1,12 @@
 ## Please make sure your working dir is the path of this file
 source("common_func.R")
+library(exceedance)
 library(mvtnorm)
-devtools::load_all()
+## We use foreach to do the parallel computing
+library(foreach)
+library(doParallel)
+registerDoParallel(cores=6)
+
 sample_pvalue<-function(n,mu,n_null,sigma){
     n_alt <- n - n_null
     1-pnorm(rmvnorm(1, c(rep(0,n_null),rep(mu,n_alt)),sigma))
@@ -26,90 +31,78 @@ nSim <- 100
 alpha <- 0.1
 gamma <- 0.1
 m <- 100
-mu <- 3
 a <- 0.5
-H1_num <- m * a
-H0_num <- m - H1_num
+mu <- 3
 cor_list <- c(0,0.1,0.2,0.3,0.4,0.5,0.6,0.7,0.8,0.9,1)
 
-set.seed(1)
 FDP_result<-c()
 FDX_result<-c()
 power_result<-c()
 for(j in seq_along(cor_list)){
+    message("j:",j)
     cor_parm<-cor_list[j]
     sigma <- getCovMat(m,cor_parm)
+    
+    H1_num <- m * a
+    H0_num <- m - H1_num
     
     mydata <- t(sapply(1:nSim, function(x) sample_pvalue(m,mu,H0_num,sigma)))
     
     ## combined stat: all region
+    message("combined stat: all region")
     param_combined_all <- get_combined_param(m)
-    result_combined_all<-matrix(NA,nSim,3)
-    for(i in 1:nSim){
+    result_combined_all<-foreach(i = 1:nSim,.combine=rbind,.packages="exceedance")%dopar%{
         x <- mydata[i,]
-        result_combined_all[i,]<-
-            test_summary(param_combined_all, x, alpha, gamma, H0_num)
+        test_summary(param_combined_all, x, alpha, gamma, H0_num)
     }
-    
-    ## BJ+ stat: all region
-    param_BJ_plus_all <- param_fast_GW(statistic = "BJ", param1 = c(0,1),
-                                       range_type = "proportion")
-    result_BJ_plus_all<-matrix(NA,nSim,3)
-    for(i in 1:nSim){
-        x <- mydata[i,]
-        result_BJ_plus_all[i,]<-
-            test_summary(param_BJ_plus_all, x, alpha, gamma, H0_num)
-    }
-    
     ## BJ stat: all region
+    message("BJ stat: all region")
     param_BJ_all <- param_fast_GW(statistic = "BJ", 
                                   param1 = c(0,1), param2 = c(0,1),
                                   range_type = "proportion")
-    result_BJ_all<-matrix(NA,nSim,3)
-    for(i in 1:nSim){
+    result_BJ_all<-foreach(i = 1:nSim,.combine=rbind,.packages="exceedance")%dopar%{
         x <- mydata[i,]
-        result_BJ_all[i,]<-
-            test_summary(param_BJ_all, x, alpha, gamma, H0_num)
+        test_summary(param_BJ_all, x, alpha, gamma, H0_num)
+    }
+    ## BJ+ stat: all region
+    message("BJ+ stat: all region")
+    param_BJ_plus_all <- param_fast_GW(statistic = "BJ", param1 = c(0,1),
+                                       range_type = "proportion")
+    result_BJ_plus_all<-foreach(i = 1:nSim,.combine=rbind,.packages="exceedance")%dopar%{
+        x <- mydata[i,]
+        test_summary(param_BJ_plus_all, x, alpha, gamma, H0_num)
     }
     
-    ## combined stat: 1-10
-    param_combined_1_10 <- get_combined_param(10)
-    result_combined_1_10<-matrix(NA,nSim,3)
-    for(i in 1:nSim){
+    
+    ## combined stat: 1-k
+    message("combined stat: 1-k")
+    result_combined_auto<-foreach(i = 1:nSim,.combine=rbind,.packages="exceedance")%dopar%{
         x <- mydata[i,]
-        result_combined_1_10[i,]<-
-            test_summary(param_combined_1_10, x, alpha, gamma, H0_num)
+        alpha_hat <- 2*(mean(x<0.5)-0.5)
+        k <- max(round(alpha_hat*gamma*m),1)
+        param_combined_auto <- get_combined_param(k)
+        test_summary(param_combined_auto, x, alpha, gamma, H0_num)
     }
     
-    ## BJ+ stat: 1-10
-    param_BJ_plus_1_10 <- param_fast_GW(statistic = "BJ", param1 = 1:10,
-                                        range_type = "index")
-    result_BJ_plus_1_10<-matrix(NA,nSim,3)
-    for(i in 1:nSim){
+    ## BJ+ stat: 1-k
+    message("BJ+ stat: 1-k")
+    result_BJ_plus_auto<-foreach(i = 1:nSim,.combine=rbind,.packages="exceedance")%dopar%{
         x <- mydata[i,]
-        result_BJ_plus_1_10[i,]<-
-            test_summary(param_BJ_plus_1_10, x, alpha, gamma, H0_num)
+        alpha_hat <- 2*(mean(x<0.5)-0.5)
+        k <- max(round(alpha_hat*gamma*m),1)
+        param_BJ_plus_auto <- param_fast_GW(statistic = "BJ", param1 = 1:k,
+                                            range_type = "index")
+        test_summary(param_BJ_plus_auto, x, alpha, gamma, H0_num)
     }
     
-    ## BJ stat: 1-10
-    param_BJ_1_10 <- param_fast_GW(statistic = "BJ", 
-                                   param1 = 1:10, param2 = 1:10,
-                                   range_type = "index")
-    result_BJ_1_10<-matrix(NA,nSim,3)
-    for(i in 1:nSim){
-        x <- mydata[i,]
-        result_BJ_1_10[i,]<-
-            test_summary(param_BJ_1_10, x, alpha, gamma, H0_num)
-    }
     
     
     collections <- c(
-        colMeans(result_combined_all),
-        colMeans(result_BJ_plus_all),
         colMeans(result_BJ_all),
-        colMeans(result_combined_1_10),
-        colMeans(result_BJ_plus_1_10),
-        colMeans(result_BJ_1_10)
+        colMeans(result_BJ_plus_all),
+        colMeans(result_combined_all),
+        colMeans(result_BJ_plus_auto),
+        colMeans(result_combined_auto)
     )
     FDP_collections <- collections[(0:((length(collections)-1)/3))*3+1]
     FDX_collections <- collections[(0:((length(collections)-1)/3))*3+2]
@@ -123,16 +116,16 @@ for(j in seq_along(cor_list)){
                         c(m, a, mu,cor_parm,power_collections))
 }
 
-FDP_result<-cbind(alpha,gamma,FDP_result)
-FDX_result<-cbind(alpha,gamma,FDX_result)
-power_result<-cbind(alpha,gamma,power_result)
+FDP_result1<-cbind(alpha,gamma,FDP_result)
+FDX_result1<-cbind(alpha,gamma,FDX_result)
+power_result1<-cbind(alpha,gamma,power_result)
 
-stat_names <- c("alpha","c","m", "a", "theta","cor","CB all","BJ+ all","BJ all",
-                "CB 1-10","BJ+ 1-10","BJ 1-10")
-colnames(FDP_result) <- stat_names
-colnames(FDX_result) <- stat_names
-colnames(power_result) <- stat_names
+stat_names <- c("alpha","c","m", "a", "theta","sigma","BJ all","BJ+ all","CB all",
+                "BJ+ 1-k","CB 1-k")
+colnames(FDP_result1) <- stat_names
+colnames(FDX_result1) <- stat_names
+colnames(power_result1) <- stat_names
 
-FDP_result
-FDX_result
-power_result
+FDP_result1
+FDX_result1
+power_result1

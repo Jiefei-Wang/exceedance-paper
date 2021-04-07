@@ -105,7 +105,7 @@ show_params_combine_GW<-function(x){
     method <- x$method
     test_params <- x$test_params
     test_methods <- vapply(test_params,function(x)show_method_name(x$method),character(1))
-    test_algorithms <- vapply(test_params,function(x)x$statistic,character(1))
+    test_algorithms <- vapply(test_params,function(x)x$statistc,character(1))
     
     
     cat("Method:", show_method_name(method),"\n")

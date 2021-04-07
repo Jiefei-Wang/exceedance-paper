@@ -12,3 +12,10 @@ verbose <- function(x){
         pkg_data$verbose
 }
 
+add_criticals <- function(x){
+    vars <- names(x)
+    vars <- vars[!vars%in%names(pkg_data$criticals)]
+    for(i in vars){
+        pkg_data$criticals[[i]] <- x[[i]]
+    }
+}
