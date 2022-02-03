@@ -4,7 +4,7 @@
 #include <iostream>
 #include <valarray>
 #include <Rcpp.h>
-
+#define PI 3.14159265358979323846
 
 #define complex_mul_real(x_real,x_img,y_real,y_img) (x_real*y_real - x_img*y_img)
 #define complex_mul_img(x_real,x_img,y_real,y_img) (x_real*y_img + x_img*y_real)

@@ -2,28 +2,13 @@
 source("common_func.R")
 library(exceedance)
 library(mvtnorm)
-## We use foreach to do the parallel computing
-library(foreach)
-library(doParallel)
-registerDoParallel(cores=6)
+## We use BiocParallel + RedisParam to do the parallel computing
+library(BiocParallel)
+library(RedisParam)
 
-sample_pvalue<-function(n,mu,n_null,sigma){
+sample_pvalue <- function(n, mu, n_null, sigma) {
     n_alt <- n - n_null
     1-pnorm(rmvnorm(1, c(rep(0,n_null),rep(mu,n_alt)),sigma))
-}
-#compute the covariance matrix
-getCovMat<-function(n,cor_parm){
-    covMat=matrix(0,n,n)
-    for(i in 1:n){
-        for(j in 1:n){
-            if(i==j){
-                covMat[i,j]=1
-            }else{
-                covMat[i,j]=cor_parm
-            }
-        }
-    }
-    covMat
 }
 
 
