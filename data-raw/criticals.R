@@ -1,7 +1,11 @@
 ## code to prepare `criticals` dataset goes here
 library(exceedance)
-
+library(BiocParallel)
+library(RedisParam)
+#p <- SerialParam(progressbar = T)
+p <- RedisParam(4)
 source("data-raw/functions.R")
+
 package_cache <- as.list(exceedance:::pkg_data$criticals)
 
 n<-10000
@@ -13,9 +17,9 @@ n_list <- seq_len(n)
 statName <- "BJ"
 alpha_list <- c(0.1)
 for(alpha in alpha_list){
-    package_cache <- compute_critical(package_cache,cl,statName, 
+    package_cache <- compute_critical(package_cache,p,statName, 
                                       alpha, n_list,
-                                      indexL="seq_len(n)", indexU="seq_len(n)")
+                                      indexLTxt="seq_len(n)", indexUTxt="seq_len(n)")
 }
 
 #####################################
@@ -27,22 +31,18 @@ alpha_list <- c(0.1)
 for(alpha in alpha_list){
     package_cache <- compute_critical(package_cache,cl,statName, 
                                       alpha, n_list,
-                                      indexL="seq_len(n)", indexU="NULL")
+                                      indexLTxt="seq_len(n)", indexUTxt="NULL")
 }
 
 #####################################
 ## paper
 #####################################
-n_list <- seq_len(2000)
+n_list <- seq_len(200)
 statName <- "BJ"
 alpha <- 0.1
-k_list <- 40:120
-for(k in k_list){
-    message(k)
-    package_cache <- compute_critical(package_cache,cl,statName, 
-                                      alpha, n_list,
-                                      indexL=paste0("seq_len(",k,")"), indexU="NULL")
-}
+package_cache <- compute_critical(package_cache,p,statName, 
+                                  alpha, n_list,
+                                  indexLTxt="seq_len(ceiling(n/2))", indexUTxt="NULL")
 
 n_list <- seq_len(5000)
 statName <- "BJ"
@@ -52,7 +52,7 @@ for(k in k_list){
     message(k)
     package_cache <- compute_critical(package_cache,cl,statName, 
                                       alpha, n_list,
-                                      indexL=paste0("seq_len(",k,")"), indexU="NULL")
+                                      indexLTxt=paste0("seq_len(",k,")"), indexUTxt="NULL")
     message(k)
 }
 
@@ -65,7 +65,7 @@ alpha <- 0.1
 k <- 4
 package_cache <- compute_critical(package_cache,cl,statName, 
                                   alpha, n_list,
-                                  indexL=paste0("seq_len(",k,")"), indexU="NULL")
+                                  indexLTxt=paste0("seq_len(",k,")"), indexUTxt="NULL")
 
 
 
@@ -77,5 +77,3 @@ save_criticals <- function(){
 
 save_criticals()
 
-
-removeQueue(queue)
