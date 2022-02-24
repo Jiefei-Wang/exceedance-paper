@@ -1,17 +1,15 @@
-## test the samples where the first `n_true` samples
-## are from true null hypothesis
-test_summary<-function(param, x, alpha, gamma, H0_num){
-    profile <- exceedance_profile(x, param)
-    rejected_idx <- exceedance_inference(profile, alpha, gamma)
+
+test_summary <- function(rejected_idx, hypo_num, H0_num, FDP_bound){
     n_reject <- max(length(rejected_idx),1)
     
-    n <- length(x)
-    H1_num <- n-H0_num
+    H1_num <- hypo_num-H0_num
     FDP <- sum(rejected_idx<=H0_num)/n_reject
-    FDX <- FDP>gamma
+    FDX <- FDP>FDP_bound
     power <- sum(rejected_idx>H0_num)/max(H1_num, 1)
-    c(FDP,FDX,power)
+    setNames(c(FDP,FDX,power), c("FDP", "FDX", "power"))
 }
+
+
 
 ## Get combined kth order statistic parameter
 get_combined_param<-function(n){
@@ -25,9 +23,19 @@ get_combined_param<-function(n){
 }
 
 
-sample_pvalue <- function(n, mu, n_null, sigma) {
-    n_alt <- n - n_null
-    1-pnorm(rmvnorm(1, c(rep(0,n_null),rep(mu,n_alt)),sigma))
+sample_pvalue <- function(nrep, n, mu, n_null, sigma) {
+    if(!all(sigma==1)){
+        n_alt <- n - n_null
+        1-pnorm(rmvnorm(nrep, c(rep(0,n_null),rep(mu,n_alt)),sigma, method= "chol"))
+    } else {
+        data <- matrix(0, nrep, n)
+        for (i in 1:nrow(data))
+            data[i,] <- runif(1)
+        if(n_null!=n){
+            data[,(n_null+1):n] <- data[,(n_null+1):n] + mu
+        }
+        data
+    }
 }
 
 #compute the covariance matrix
@@ -72,4 +80,23 @@ getCovMat <- function(n, params, type = c("ind", "cs", "ar1", "toeplitz")){
 
 collapse_list <- function(x){
     do.call(rbind, x)
+}
+
+
+KR_fdp <- function(x_sort, alpha){
+    pmin(1, sapply(seq_along(x_sort), function(k){
+        floor(log(1/alpha)/log(1+log(1/alpha))*(1+length(x_sort)*x_sort[k]))
+    })/seq_along(x_sort))
+}
+## return the index of rejections
+KR_inference <- function(x, alpha, bound){
+    x_sort <- sort(x)
+    fdp_bar<- KR_fdp(x_sort, alpha)
+    i <- which(fdp_bar<bound)
+    if(length(i)){
+        i <- i[length(i)]
+        which(x<=x_sort[i])
+    }else{
+        integer()
+    }
 }

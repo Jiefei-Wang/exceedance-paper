@@ -123,12 +123,12 @@ compute_key_critical <- function(statName, n, alpha, indexL, indexU){
                                alpha=alpha, indexL=indexL, indexU=indexU)
     if(use_cache()&&exist_cache_value(cache_key)){
         if(verbose()){
-            message("use cache value")
+            message("use cache value for n=", n, " alpha=", alpha)
         }
         critical <- get_cache_value(cache_key)
     }else{
         if(verbose()){
-            message("compute criticals")
+            message("compute criticals for n=", n, " alpha=", alpha)
         }
         critical <- GKSCritical(n=n,alpha=alpha,indexL=indexL,indexU=indexU,statName=statName)
         set_cache_value(cache_key, critical)

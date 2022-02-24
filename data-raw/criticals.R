@@ -1,14 +1,12 @@
 ## code to prepare `criticals` dataset goes here
 library(exceedance)
 library(BiocParallel)
-library(RedisParam)
-#p <- SerialParam(progressbar = T)
-p <- RedisParam(4)
+p <- SnowParam(progressbar = T)
 source("data-raw/functions.R")
 
 package_cache <- as.list(exceedance:::pkg_data$criticals)
 
-n<-10000
+n<- 5000
 #####################################
 ## two-sided
 ## BJ, KS, HC
@@ -37,12 +35,13 @@ for(alpha in alpha_list){
 #####################################
 ## paper
 #####################################
-n_list <- seq_len(200)
+n_list <- seq_len(5000)
 statName <- "BJ"
 alpha <- 0.1
-package_cache <- compute_critical(package_cache,p,statName, 
+package_cache <- compute_critical(package_cache, p, statName, 
                                   alpha, n_list,
-                                  indexLTxt="seq_len(ceiling(n/2))", indexUTxt="NULL")
+                                  indexLTxt="seq_len(n)", indexUTxt="NULL")
+
 
 n_list <- seq_len(5000)
 statName <- "BJ"
