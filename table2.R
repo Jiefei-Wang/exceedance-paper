@@ -8,12 +8,12 @@ library(doParallel)
 registerDoParallel(cores=12)
 
 
-nSim <- 100
+nSim <- 1000
 alpha <- 0.1
 FDP_bound <- 0.1
-hypo_num <- 100
-H0_num <- 50
-H1_num <- 50
+hypo_num <- 1000
+H0_num <- 500
+H1_num <- 500
 theta <- 1.5
 corList <- 0:10/10
 corType <- "cs"

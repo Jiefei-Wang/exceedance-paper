@@ -10,7 +10,7 @@ library(parallel)
 registerDoParallel(cores=12)
 
 
-nSim <- 100
+nSim <- 1000
 alpha <- 0.1
 FDP_bound <- 0.1
 hypo_num <- 1000
